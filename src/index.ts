@@ -11,7 +11,7 @@ const program = new Command();
 // ─── Helpers ────────────────────────────────────────────
 
 function getBaseUrl(): string {
-  return (config.get("baseUrl") as string) || "http://localhost:5000";
+  return (config.get("baseUrl") as string) || "https://api.sharedmemory.ai";
 }
 
 function getApiKey(): string {
