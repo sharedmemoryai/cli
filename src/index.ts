@@ -48,7 +48,7 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
 program
   .name("smem")
   .description("SharedMemory CLI — manage AI agent memory from your terminal")
-  .version("0.1.0");
+  .version("2.0.0");
 
 program
   .command("config")
@@ -73,7 +73,7 @@ program
     if (opts.show || (!opts.apiKey && !opts.baseUrl && !opts.volume)) {
       console.log(chalk.bold("\nCurrent config:"));
       console.log(`  Base URL:  ${getBaseUrl()}`);
-      console.log(`  API Key:   ${config.get("apiKey") ? "****" + String(config.get("apiKey")).slice(-4) : chalk.yellow("not set")}`);
+      console.log(`  API Key:   ${config.get("apiKey") ? "****" + String(config.get("apiKey")).slice(-4) : chalk.yellow("not set (sm_proj_rw_… or sm_agent_…)")}`);
       console.log(`  Volume:    ${getVolumeId()}`);
       console.log();
     }
@@ -288,6 +288,119 @@ program
       if (health.version) console.log(chalk.dim(`  Version: ${health.version}`));
     } catch (err: any) {
       spinner.fail(`Cannot connect to ${getBaseUrl()}: ${err.message}`);
+    }
+  });
+
+// ─── Agents ─────────────────────────────────────────────
+
+const agentsCmd = program
+  .command("agents")
+  .description("Manage agent profiles");
+
+agentsCmd
+  .command("list")
+  .description("List agents for an organization")
+  .requiredOption("--org <id>", "Organization ID")
+  .option("--project <id>", "Filter by project ID")
+  .action(async (opts) => {
+    const spinner = ora("Fetching agents...").start();
+
+    try {
+      const qs = opts.project ? `?project_id=${opts.project}` : "";
+      const result = await apiFetch(`/agents${qs}`, {
+        headers: { "x-org-id": opts.org } as any,
+      });
+      spinner.stop();
+
+      if (!result.length) {
+        console.log(chalk.dim("\nNo agents found.\n"));
+        return;
+      }
+
+      console.log(chalk.bold(`\n${result.length} agent(s):\n`));
+      for (const a of result) {
+        const status = a.is_active ? chalk.green("active") : chalk.red("inactive");
+        console.log(`  ${chalk.cyan(a.name)} ${chalk.dim(`(${a.agent_id})`)} ${status}`);
+        if (a.description) console.log(`    ${chalk.dim(a.description)}`);
+        console.log(`    ${chalk.dim(`key: ${a.key_prefix}…  created: ${a.created_at?.split("T")[0] || ""}`)}`);
+      }
+      console.log();
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
+agentsCmd
+  .command("create")
+  .description("Create a new agent with an auto-generated API key")
+  .requiredOption("--org <id>", "Organization ID")
+  .requiredOption("--project <id>", "Project (volume) ID")
+  .requiredOption("--name <name>", "Agent name")
+  .option("--description <desc>", "Agent description")
+  .option("--system-prompt <prompt>", "System prompt for the agent")
+  .action(async (opts) => {
+    const spinner = ora("Creating agent...").start();
+
+    try {
+      const result = await apiFetch("/agents", {
+        method: "POST",
+        body: JSON.stringify({
+          org_id: opts.org,
+          project_id: opts.project,
+          name: opts.name,
+          description: opts.description,
+          system_prompt: opts.systemPrompt,
+        }),
+      });
+
+      spinner.stop();
+      console.log(chalk.green("\n✓ Agent created\n"));
+      console.log(`  Name:     ${chalk.cyan(result.agent.name)}`);
+      console.log(`  Agent ID: ${chalk.dim(result.agent.agent_id)}`);
+      console.log(`  API Key:  ${chalk.yellow(result.api_key)}`);
+      console.log(chalk.red("\n  ⚠ Save this key now — it won't be shown again.\n"));
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
+agentsCmd
+  .command("delete <agent_id>")
+  .description("Deactivate an agent and revoke its API key")
+  .requiredOption("--org <id>", "Organization ID")
+  .action(async (agentId, opts) => {
+    const spinner = ora("Deactivating agent...").start();
+
+    try {
+      await apiFetch(`/agents/${agentId}`, {
+        method: "DELETE",
+        headers: { "x-org-id": opts.org } as any,
+      });
+      spinner.stop();
+      console.log(chalk.green("\n✓ Agent deactivated and API key revoked.\n"));
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
+agentsCmd
+  .command("rotate-key <agent_id>")
+  .description("Rotate an agent's API key")
+  .requiredOption("--org <id>", "Organization ID")
+  .action(async (agentId, opts) => {
+    const spinner = ora("Rotating key...").start();
+
+    try {
+      const result = await apiFetch(`/agents/${agentId}/rotate-key`, {
+        method: "POST",
+        headers: { "x-org-id": opts.org } as any,
+      });
+      spinner.stop();
+      console.log(chalk.green("\n✓ Key rotated\n"));
+      console.log(`  New API Key: ${chalk.yellow(result.api_key)}`);
+      console.log(chalk.red("\n  ⚠ Save this key now — it won't be shown again.\n"));
+    } catch (err: any) {
+      spinner.fail(err.message);
     }
   });
 
