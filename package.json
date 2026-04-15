@@ -7,12 +7,26 @@
     "smem": "./dist/index.js"
   },
   "main": "dist/index.js",
+  "files": ["dist", "LICENSE", "README.md"],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "dev": "tsx src/index.ts"
   },
-  "keywords": ["ai", "memory", "agents", "shared-memory", "cli"],
+  "keywords": ["ai", "memory", "agents", "shared-memory", "cli", "llm", "mcp"],
+  "author": "SharedMemory AI <akash@sharedmemory.ai> (https://sharedmemory.ai)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sharedmemoryai/cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sharedmemoryai/cli/issues"
+  },
+  "homepage": "https://docs.sharedmemory.ai/sdks/cli",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "commander": "^12.0.0",
     "chalk": "^5.3.0",

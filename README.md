@@ -1,18 +1,19 @@
 # @sharedmemory/cli
 
-Command-line interface for [SharedMemory](https://sharedmemory.ai) — manage AI agent memory from your terminal.
+Command-line interface for [SharedMemory](https://sharedmemory.ai) — manage AI agent memory from the terminal.
 
-## Install
+## Installation
 
 ```bash
 npm install -g @sharedmemory/cli
 ```
 
+Requires Node.js 18+.
+
 ## Setup
 
 ```bash
 smem config --api-key sm_live_...
-smem config --base-url https://api.sharedmemory.ai
 smem config --volume your-volume-id
 ```
 
@@ -20,16 +21,13 @@ smem config --volume your-volume-id
 
 ### `smem add <content>`
 
-Add a memory to the current volume.
+Store a memory.
 
 ```bash
 smem add "John Smith is the CTO of Acme Corp"
-# APPROVED (92% confidence)
-#   Reason: New factual information
-#   Memory ID: a1b2c3d4-...
 ```
 
-Options: `-v <volume>`, `-t <type>` (factual/episodic/procedural), `-a <agent>`
+Options: `-v <volume>`, `-t <type>` (factual / episodic / procedural), `-a <agent>`
 
 ### `smem search <query>`
 
@@ -37,19 +35,17 @@ Search entities in the knowledge graph.
 
 ```bash
 smem search "React"
-# 3 entities found
-#   1. React [technology] (12 facts)
 ```
 
 ### `smem ask <question>`
 
-Ask a question — the LLM answers using your stored memories.
+Ask a question answered from stored memories.
 
 ```bash
 smem ask "What technologies does John use?"
 ```
 
-Options: `-v <volume>`, `--learn` (auto-learn from conversation)
+Options: `-v <volume>`, `--learn` (auto-save insights from the conversation)
 
 ### `smem profile`
 
@@ -57,22 +53,22 @@ View the auto-generated profile for the current volume.
 
 ### `smem volumes`
 
-List your memory volumes.
+List available memory volumes.
 
 ### `smem status`
 
-Check API connection.
+Check API connectivity.
 
-```bash
-smem status
-# ✓ Connected to SharedMemory
-#   URL: https://api.sharedmemory.ai
-#   Version: 2.0
+```
+$ smem status
+Connected to SharedMemory
+  URL:     https://api.sharedmemory.ai
+  Version: 2.0
 ```
 
-## Docs
+## Documentation
 
-Full documentation: [docs.sharedmemory.ai/sdks/cli](https://docs.sharedmemory.ai/sdks/cli)
+https://docs.sharedmemory.ai/sdks/cli
 
 ## License
 
