@@ -54,7 +54,7 @@ program
   .command("config")
   .description("Configure the CLI")
   .option("--api-key <key>", "Set your SharedMemory API key")
-  .option("--base-url <url>", "Set the API base URL (default: http://localhost:5000)")
+  .option("--base-url <url>", "Set the API base URL (default: https://api.sharedmemory.ai)")
   .option("--volume <id>", "Set the default volume ID")
   .option("--show", "Show current config")
   .action((opts) => {
