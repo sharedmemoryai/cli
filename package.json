@@ -1,6 +1,6 @@
 {
   "name": "@sharedmemory/cli",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "CLI for SharedMemory — manage AI agent memory from your terminal",
   "bin": {
@@ -26,6 +26,9 @@
   "homepage": "https://docs.sharedmemory.ai/sdks/cli",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "commander": "^12.0.0",

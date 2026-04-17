@@ -66,6 +66,38 @@ Connected to SharedMemory
   Version: 2.0
 ```
 
+### `smem agents list`
+
+List agents in an organization.
+
+```bash
+smem agents list --org <org-id>
+```
+
+### `smem agents create`
+
+Create a new agent and get an API key.
+
+```bash
+smem agents create --org <org-id> --project <project-id> --name "my-agent"
+```
+
+### `smem agents delete`
+
+Deactivate an agent and revoke its API key.
+
+```bash
+smem agents delete <agent-id>
+```
+
+### `smem agents rotate-key`
+
+Rotate an agent's API key.
+
+```bash
+smem agents rotate-key <agent-id>
+```
+
 ## Documentation
 
 https://docs.sharedmemory.ai/sdks/cli
