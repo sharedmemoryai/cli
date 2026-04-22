@@ -11,22 +11,22 @@ const program = new Command();
 // ─── Helpers ────────────────────────────────────────────
 
 function getBaseUrl(): string {
-  return (config.get("baseUrl") as string) || "https://api.sharedmemory.ai";
+  return process.env.SM_BASE_URL || (config.get("baseUrl") as string) || "https://api.sharedmemory.ai";
 }
 
 function getApiKey(): string {
-  const key = config.get("apiKey") as string;
+  const key = process.env.SM_API_KEY || (config.get("apiKey") as string);
   if (!key) {
-    console.error(chalk.red("No API key configured. Run: smem config --api-key <key>"));
+    console.error(chalk.red("No API key configured. Run: smem config --api-key <key>  or set SM_API_KEY"));
     process.exit(1);
   }
   return key;
 }
 
 function getVolumeId(): string {
-  const vol = config.get("volumeId") as string;
+  const vol = process.env.SM_VOLUME_ID || (config.get("volumeId") as string);
   if (!vol) {
-    console.error(chalk.red("No volume configured. Run: smem config --volume <uuid>"));
+    console.error(chalk.red("No volume configured. Run: smem config --volume <uuid>  or set SM_VOLUME_ID"));
     process.exit(1);
   }
   return vol;
@@ -127,36 +127,48 @@ program
   .command("search <query...>")
   .description("Search memories (hybrid: vector + knowledge graph)")
   .option("-v, --volume <id>", "Volume ID")
-  .option("-m, --mode <mode>", "Search mode: hybrid, vector, graph", "hybrid")
   .option("-n, --limit <n>", "Max results", "10")
   .action(async (queryParts: string[], opts) => {
     const q = queryParts.join(" ");
     const spinner = ora("Searching...").start();
 
     try {
-      const result = await apiFetch("/agent/entities/search", {
+      const result = await apiFetch("/agent/memory/query", {
         method: "POST",
         body: JSON.stringify({
           query: q,
           volume_id: opts.volume || getVolumeId(),
           limit: parseInt(opts.limit),
-          mode: opts.mode,
         }),
       });
 
       spinner.stop();
 
-      if (!result.length) {
-        console.log(chalk.dim("\nNo entities found.\n"));
+      if (!result.memories?.length && !result.graph_facts?.length) {
+        console.log(chalk.dim("\nNo results found.\n"));
         return;
       }
 
-      console.log(chalk.bold(`\n${result.length} entities found\n`));
-
-      for (const [i, e] of result.entries()) {
-        console.log(`  ${chalk.dim(`${i + 1}.`)} ${chalk.cyan(e.name)} ${chalk.dim(`[${e.type}]`)} ${chalk.dim(`(${e.factCount} facts)`)}`);
-        if (e.summary) console.log(`     ${chalk.dim(e.summary)}`);
+      if (result.memories?.length) {
+        console.log(chalk.bold(`\n${result.memories.length} memories found\n`));
+        for (const [i, m] of result.memories.entries()) {
+          const pct = Math.round((m.score || 0) * 100);
+          const agent = m.agent ? `by ${m.agent}` : "";
+          const date = m.created_at ? m.created_at.slice(0, 10) : "";
+          console.log(`  ${chalk.dim(`${i + 1}.`)} ${chalk.dim(`(${pct}%)`)} ${m.content}`);
+          if (agent || date) console.log(`     ${chalk.dim(`${agent} · ${date}`)}`);
+        }
       }
+
+      if (result.graph_facts?.length) {
+        console.log(chalk.bold(`\n${result.graph_facts.length} graph facts\n`));
+        for (const f of result.graph_facts) {
+          console.log(`  ${chalk.cyan(f.source)} ${chalk.dim("→")} ${chalk.yellow(f.type)} ${chalk.dim("→")} ${chalk.cyan(f.target)}`);
+          if (f.description) console.log(`     ${chalk.dim(f.description)}`);
+        }
+      }
+
+      console.log(chalk.dim(`\nTotal: ${result.total_results} results`));
       console.log();
     } catch (err: any) {
       spinner.fail(err.message);
