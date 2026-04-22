@@ -24,7 +24,12 @@ function getApiKey(): string {
 }
 
 function getVolumeId(): string {
-  return (config.get("volumeId") as string) || "default";
+  const vol = config.get("volumeId") as string;
+  if (!vol) {
+    console.error(chalk.red("No volume configured. Run: smem config --volume <uuid>"));
+    process.exit(1);
+  }
+  return vol;
 }
 
 async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
@@ -211,15 +216,17 @@ program
   .command("profile")
   .description("View the auto-generated profile for this volume")
   .option("-v, --volume <id>", "Volume ID")
+  .option("-u, --user <id>", "User ID to profile", "user")
   .option("--refresh", "Force regenerate the profile")
   .action(async (opts) => {
     const spinner = ora("Generating profile...").start();
 
     try {
       const vol = opts.volume || getVolumeId();
-      const result = await apiFetch(`/agent/entity`, {
+      const userId = opts.user || "user";
+      const result = await apiFetch(`/agent/memory/profile`, {
         method: "POST",
-        body: JSON.stringify({ name: vol, volume_id: vol, refresh: opts.refresh || false }),
+        body: JSON.stringify({ volume_id: vol, user_id: userId, refresh: opts.refresh || false }),
       });
 
       spinner.stop();
@@ -228,18 +235,26 @@ program
       console.log(chalk.dim(result.summary));
       console.log();
 
-      if (result.static_profile.facts.length) {
+      if (result.static?.length) {
         console.log(chalk.bold("Stable facts:"));
-        for (const f of result.static_profile.facts) {
+        for (const f of result.static) {
           console.log(`  • ${f}`);
         }
         console.log();
       }
 
-      if (result.dynamic_profile.activities.length) {
+      if (result.dynamic?.length) {
         console.log(chalk.bold("Recent activity:"));
-        for (const a of result.dynamic_profile.activities) {
+        for (const a of result.dynamic) {
           console.log(`  → ${chalk.cyan(a)}`);
+        }
+        console.log();
+      }
+
+      if (result.relationships?.length) {
+        console.log(chalk.bold("Relationships:"));
+        for (const r of result.relationships) {
+          console.log(`  ${chalk.cyan(r.entity)} ${chalk.dim(`(${r.type})`)}`);
         }
         console.log();
       }
