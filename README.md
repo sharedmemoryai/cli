@@ -37,6 +37,8 @@ Search entities in the knowledge graph.
 smem search "React"
 ```
 
+Options: `-v <volume>`, `-m <mode>` (hybrid / vector / graph), `-n <limit>`
+
 ### `smem ask <question>`
 
 Ask a question answered from stored memories.
@@ -87,7 +89,7 @@ smem agents create --org <org-id> --project <project-id> --name "my-agent"
 Deactivate an agent and revoke its API key.
 
 ```bash
-smem agents delete <agent-id>
+smem agents delete <agent-id> --org <org-id>
 ```
 
 ### `smem agents rotate-key`
@@ -95,7 +97,7 @@ smem agents delete <agent-id>
 Rotate an agent's API key.
 
 ```bash
-smem agents rotate-key <agent-id>
+smem agents rotate-key <agent-id> --org <org-id>
 ```
 
 ## Documentation

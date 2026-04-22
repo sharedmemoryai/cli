@@ -48,7 +48,7 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
 program
   .name("smem")
   .description("SharedMemory CLI — manage AI agent memory from your terminal")
-  .version("2.0.0");
+  .version("2.0.1");
 
 program
   .command("config")
@@ -135,6 +135,7 @@ program
           query: q,
           volume_id: opts.volume || getVolumeId(),
           limit: parseInt(opts.limit),
+          mode: opts.mode,
         }),
       });
 
@@ -218,7 +219,7 @@ program
       const vol = opts.volume || getVolumeId();
       const result = await apiFetch(`/agent/entity`, {
         method: "POST",
-        body: JSON.stringify({ name: vol, volume_id: vol }),
+        body: JSON.stringify({ name: vol, volume_id: vol, refresh: opts.refresh || false }),
       });
 
       spinner.stop();
