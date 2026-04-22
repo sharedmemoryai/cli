@@ -322,10 +322,8 @@ agentsCmd
     const spinner = ora("Fetching agents...").start();
 
     try {
-      const qs = opts.project ? `?project_id=${opts.project}` : "";
-      const result = await apiFetch(`/agents${qs}`, {
-        headers: { "x-org-id": opts.org } as any,
-      });
+      const qs = opts.project ? `?org_id=${opts.org}&project_id=${opts.project}` : `?org_id=${opts.org}`;
+      const result = await apiFetch(`/agents${qs}`);
       spinner.stop();
 
       if (!result.length) {
@@ -371,8 +369,8 @@ agentsCmd
 
       spinner.stop();
       console.log(chalk.green("\n✓ Agent created\n"));
-      console.log(`  Name:     ${chalk.cyan(result.agent.name)}`);
-      console.log(`  Agent ID: ${chalk.dim(result.agent.agent_id)}`);
+      console.log(`  Name:     ${chalk.cyan(result.name)}`);
+      console.log(`  Agent ID: ${chalk.dim(result.agent_id)}`);
       console.log(`  API Key:  ${chalk.yellow(result.api_key)}`);
       console.log(chalk.red("\n  ⚠ Save this key now — it won't be shown again.\n"));
     } catch (err: any) {
