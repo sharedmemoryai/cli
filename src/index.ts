@@ -226,50 +226,98 @@ program
 
 program
   .command("profile")
-  .description("View the auto-generated profile for this volume")
+  .description("View a comprehensive profile for this volume (or a specific user)")
   .option("-v, --volume <id>", "Volume ID")
-  .option("-u, --user <id>", "User ID to profile", "user")
-  .option("--refresh", "Force regenerate the profile")
+  .option("-u, --user <id>", "User ID to scope profile (optional)")
+  .option("--refresh", "Force regenerate (bypass 5-min cache)")
   .action(async (opts) => {
-    const spinner = ora("Generating profile...").start();
+    const spinner = ora("Building profile...").start();
 
     try {
       const vol = opts.volume || getVolumeId();
-      const userId = opts.user || "user";
+      const body: any = { volume_id: vol };
+      if (opts.user) body.user_id = opts.user;
+      if (opts.refresh) body.refresh = true;
+
       const result = await apiFetch(`/agent/memory/profile`, {
         method: "POST",
-        body: JSON.stringify({ volume_id: vol, user_id: userId, refresh: opts.refresh || false }),
+        body: JSON.stringify(body),
       });
 
       spinner.stop();
 
-      console.log(chalk.bold(`\nProfile: ${result.user_id}\n`));
-      console.log(chalk.dim(result.summary));
-      console.log();
+      const title = result.user_id ? `Profile: ${result.user_id}` : "Volume Profile";
+      console.log(chalk.bold(`\n${title}\n`));
+      if (result.summary) console.log(chalk.dim(result.summary) + "\n");
 
-      if (result.static?.length) {
-        console.log(chalk.bold("Stable facts:"));
-        for (const f of result.static) {
-          console.log(`  • ${f}`);
-        }
+      if (result.identity?.length) {
+        console.log(chalk.bold("Identity:"));
+        for (const f of result.identity) console.log(`  • ${f}`);
         console.log();
       }
 
-      if (result.dynamic?.length) {
-        console.log(chalk.bold("Recent activity:"));
-        for (const a of result.dynamic) {
-          console.log(`  → ${chalk.cyan(a)}`);
-        }
+      if (result.preferences?.length) {
+        console.log(chalk.bold("Preferences:"));
+        for (const p of result.preferences) console.log(`  • ${chalk.cyan(p)}`);
+        console.log();
+      }
+
+      if (result.expertise?.length) {
+        console.log(chalk.bold("Expertise:"));
+        for (const e of result.expertise) console.log(`  • ${chalk.yellow(e)}`);
+        console.log();
+      }
+
+      if (result.projects?.length) {
+        console.log(chalk.bold("Projects:"));
+        for (const p of result.projects) console.log(`  • ${p}`);
+        console.log();
+      }
+
+      if (result.recent_activity?.length) {
+        console.log(chalk.bold("Recent Activity:"));
+        for (const a of result.recent_activity) console.log(`  → ${chalk.cyan(a)}`);
         console.log();
       }
 
       if (result.relationships?.length) {
         console.log(chalk.bold("Relationships:"));
         for (const r of result.relationships) {
-          console.log(`  ${chalk.cyan(r.entity)} ${chalk.dim(`(${r.type})`)}`);
+          console.log(`  ${chalk.cyan(r.entity)} ${chalk.dim(`(${r.type})`)}${r.description ? ` — ${chalk.dim(r.description)}` : ""}`);
         }
         console.log();
       }
+
+      if (result.topics?.length) {
+        console.log(chalk.bold("Topics:"));
+        for (const t of result.topics.slice(0, 10)) {
+          console.log(`  • ${t.name} ${chalk.dim(`(${t.fact_count} facts)`)}`);
+        }
+        console.log();
+      }
+
+      if (result.instructions?.length) {
+        console.log(chalk.bold("Instructions:"));
+        for (const [i, inst] of result.instructions.entries()) {
+          console.log(`  ${chalk.dim(`${i + 1}.`)} ${inst}`);
+        }
+        console.log();
+      }
+
+      const s = result.stats;
+      if (s) {
+        console.log(chalk.bold("Stats:"));
+        console.log(`  Memories: ${s.total_memories} total, ${s.memories_7d} last 7d, ${s.memories_30d} last 30d`);
+        console.log(`  Entities: ${s.entities_count}`);
+        if (s.last_active) console.log(`  Last active: ${s.last_active.slice(0, 10)}`);
+        if (Object.keys(s.memory_types).length) {
+          console.log(`  Types: ${Object.entries(s.memory_types).map(([k, v]) => `${k}(${v})`).join(", ")}`);
+        }
+        console.log();
+      }
+
+      console.log(chalk.dim(`${result.cached ? "Cached" : "Fresh"} · ${result.latency_ms}ms · ${result.token_estimate} tokens`));
+      console.log();
     } catch (err: any) {
       spinner.fail(err.message);
     }
