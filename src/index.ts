@@ -319,6 +319,91 @@ program
     }
   });
 
+// ─── Instructions ────────────────────────────────────────
+
+const instructionsCmd = program
+  .command("instructions")
+  .description("Manage project instructions (rules all agents receive)");
+
+instructionsCmd
+  .command("add <content...>")
+  .description("Add an instruction to the current volume")
+  .option("-v, --volume <id>", "Volume ID")
+  .action(async (contentParts: string[], opts) => {
+    const content = contentParts.join(" ");
+    const spinner = ora("Adding instruction...").start();
+
+    try {
+      const result = await apiFetch("/agent/memory/write", {
+        method: "POST",
+        body: JSON.stringify({
+          content,
+          volume_id: opts.volume || getVolumeId(),
+          memory_type: "instruction",
+          source: "cli",
+        }),
+      });
+
+      spinner.stop();
+
+      const statusColor = result.status === "approved" ? chalk.green :
+                          result.status === "rejected" ? chalk.red : chalk.yellow;
+
+      console.log(`${statusColor(result.status.toUpperCase())} ${chalk.dim(`(${(result.confidence * 100).toFixed(0)}% confidence)`)}`);
+      console.log(chalk.dim(`  Memory ID: ${result.memory_id}`));
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
+instructionsCmd
+  .command("list")
+  .description("List all instructions for the current volume")
+  .option("-v, --volume <id>", "Volume ID")
+  .action(async (opts) => {
+    const spinner = ora("Fetching instructions...").start();
+
+    try {
+      const vol = opts.volume || getVolumeId();
+      const result = await apiFetch(`/agent/memory/list?volume_id=${encodeURIComponent(vol)}&memory_type=instruction`);
+      spinner.stop();
+
+      if (!result?.length) {
+        console.log(chalk.dim("\nNo instructions set.\n"));
+        return;
+      }
+
+      console.log(chalk.bold(`\n${result.length} instruction(s):\n`));
+      for (const [i, m] of result.entries()) {
+        const date = m.created_at ? m.created_at.slice(0, 10) : "";
+        console.log(`  ${chalk.dim(`${i + 1}.`)} ${m.content}`);
+        console.log(`     ${chalk.dim(`${m.memory_id} · ${date}`)}`);
+      }
+      console.log();
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
+instructionsCmd
+  .command("remove <memoryId>")
+  .description("Remove an instruction by memory ID")
+  .option("-v, --volume <id>", "Volume ID")
+  .action(async (memoryId: string, opts) => {
+    const spinner = ora("Removing instruction...").start();
+
+    try {
+      const vol = opts.volume || getVolumeId();
+      await apiFetch(`/agent/memory/${memoryId}?volume_id=${encodeURIComponent(vol)}`, {
+        method: "DELETE",
+      });
+      spinner.stop();
+      console.log(chalk.green("✓ Instruction removed"));
+    } catch (err: any) {
+      spinner.fail(err.message);
+    }
+  });
+
 // ─── Agents ─────────────────────────────────────────────
 
 const agentsCmd = program
