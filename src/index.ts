@@ -91,21 +91,24 @@ program
   .description("Add a memory to the current volume")
   .option("-v, --volume <id>", "Volume ID")
   .option("-t, --type <type>", "Memory type (factual, episodic, procedural)", "factual")
+  .option("-d, --date <date>", "Event date (ISO format, e.g. 2026-04-22)")
   .option("-a, --agent <name>", "Agent name", "cli")
   .action(async (contentParts: string[], opts) => {
     const content = contentParts.join(" ");
     const spinner = ora("Adding memory...").start();
 
     try {
+      const body: any = {
+        content,
+        volume_id: opts.volume || getVolumeId(),
+        agent: opts.agent,
+        memory_type: opts.type,
+        source: "cli",
+      };
+      if (opts.date) body.event_date = opts.date;
       const result = await apiFetch("/agent/memory/write", {
         method: "POST",
-        body: JSON.stringify({
-          content,
-          volume_id: opts.volume || getVolumeId(),
-          agent: opts.agent,
-          memory_type: opts.type,
-          source: "cli",
-        }),
+        body: JSON.stringify(body),
       });
 
       spinner.stop();
@@ -128,18 +131,23 @@ program
   .description("Search memories (hybrid: vector + knowledge graph)")
   .option("-v, --volume <id>", "Volume ID")
   .option("-n, --limit <n>", "Max results", "10")
+  .option("--from <date>", "Filter events from this date (ISO, e.g. 2026-04-01)")
+  .option("--to <date>", "Filter events until this date (ISO, e.g. 2026-04-30)")
   .action(async (queryParts: string[], opts) => {
     const q = queryParts.join(" ");
     const spinner = ora("Searching...").start();
 
     try {
+      const body: any = {
+        query: q,
+        volume_id: opts.volume || getVolumeId(),
+        limit: parseInt(opts.limit),
+      };
+      if (opts.from) body.date_from = opts.from;
+      if (opts.to) body.date_to = opts.to;
       const result = await apiFetch("/agent/memory/query", {
         method: "POST",
-        body: JSON.stringify({
-          query: q,
-          volume_id: opts.volume || getVolumeId(),
-          limit: parseInt(opts.limit),
-        }),
+        body: JSON.stringify(body),
       });
 
       spinner.stop();
