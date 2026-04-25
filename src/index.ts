@@ -6,7 +6,6 @@ import chalk from "chalk";
 import ora from "ora";
 import inquirer from "inquirer";
 import { exec } from "child_process";
-import http from "http";
 import crypto from "crypto";
 
 const config = new Conf({ projectName: "sharedmemory" });
@@ -258,115 +257,75 @@ async function loginFlow() {
 }
 
 /**
- * GitHub-style browser auth: start local server, open browser, wait for callback.
+ * Device-code browser auth (like npm/GitHub CLI).
+ * No localhost server — CLI polls the API for the token.
  */
-function browserAuthFlow(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const state = crypto.randomBytes(20).toString("hex");
-    const TIMEOUT_MS = 120_000; // 2 minutes
+async function browserAuthFlow(): Promise<string> {
+  const code = crypto.randomBytes(20).toString("hex");
+  const baseUrl = getBaseUrl();
+  const POLL_INTERVAL = 2000;
+  const TIMEOUT_MS = 300_000; // 5 minutes
 
-    const server = http.createServer((req, res) => {
-      const url = new URL(req.url || "/", `http://localhost`);
-
-      if (url.pathname === "/callback") {
-        const token = url.searchParams.get("token");
-        const returnedState = url.searchParams.get("state");
-
-        if (returnedState !== state) {
-          res.writeHead(400, { "Content-Type": "text/html" });
-          res.end("<html><body><h2>&#10007; State mismatch — please try again.</h2></body></html>");
-          cleanup();
-          reject(new Error("State mismatch"));
-          return;
-        }
-
-        if (!token) {
-          res.writeHead(400, { "Content-Type": "text/html" });
-          res.end("<html><body><h2>&#10007; No token received.</h2></body></html>");
-          cleanup();
-          reject(new Error("No token received"));
-          return;
-        }
-
-        // Success!
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(`<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:white;">
-          <div style="text-align:center">
-            <h1 style="color:#22c55e">&#10003; CLI Authenticated!</h1>
-            <p id="msg" style="color:#9ca3af">You can close this tab and return to your terminal.</p>
-          </div>
-          <script>try{setTimeout(()=>window.close(),1000)}catch(e){}</script>
-        </body></html>`);
-
-        cleanup();
-        resolve(token);
-      } else {
-        res.writeHead(404);
-        res.end();
-      }
-    });
-
-    let timer: NodeJS.Timeout;
-
-    function cleanup() {
-      clearTimeout(timer);
-      server.close();
-    }
-
-    // Listen on random port
-    server.listen(0, "127.0.0.1", () => {
-      const addr = server.address();
-      if (!addr || typeof addr === "string") {
-        reject(new Error("Failed to start local server"));
-        return;
-      }
-      const port = addr.port;
-
-      const appUrl = `https://app.sharedmemory.ai/cli-auth?port=${port}&state=${state}`;
-
-      console.log();
-      console.log(
-        `  ${DIM("Opening")} ${ACCENT("SharedMemory")} ${DIM("in your browser...")}`,
-      );
-      console.log(
-        `  ${DIM("Waiting for authentication...")}`,
-      );
-      console.log();
-      console.log(
-        `  ${DIM("If the browser didn't open, visit:")}`,
-      );
-      console.log(`  ${ACCENT(appUrl)}`);
-      console.log();
-
-      openBrowser(appUrl);
-
-      // Timeout after 2 minutes — fall back to paste
-      timer = setTimeout(async () => {
-        cleanup();
-        console.log(
-          WARN("  ⚠ Browser auth timed out."),
-        );
-        console.log();
-
-        const { key } = await inquirer.prompt([
-          {
-            type: "password",
-            name: "key",
-            message: "Paste API key manually:",
-            mask: "•",
-            prefix: "  ",
-            validate: (v: string) =>
-              v.startsWith("sm_") ? true : 'Key should start with "sm_"',
-          },
-        ]);
-        resolve(key);
-      }, TIMEOUT_MS);
-    });
-
-    server.on("error", (err) => {
-      reject(err);
-    });
+  // Register the device code
+  await fetch(`${baseUrl}/auth/cli-device-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
   });
+
+  const appUrl = `https://app.sharedmemory.ai/cli-auth?code=${code}`;
+
+  console.log();
+  console.log(
+    `  ${DIM("Opening")} ${ACCENT("SharedMemory")} ${DIM("in your browser...")}`,
+  );
+  console.log(
+    `  ${DIM("Waiting for authentication...")}`,
+  );
+  console.log();
+  console.log(
+    `  ${DIM("If the browser didn't open, visit:")}`,
+  );
+  console.log(`  ${ACCENT(appUrl)}`);
+  console.log();
+
+  openBrowser(appUrl);
+
+  // Poll for the token
+  const deadline = Date.now() + TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+
+    try {
+      const res = await fetch(`${baseUrl}/auth/cli-poll?code=${code}`);
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      if (data.status === "complete" && data.token) {
+        return data.token;
+      }
+    } catch {
+      // Network error — keep polling
+    }
+  }
+
+  // Timed out — fall back to paste
+  console.log(WARN("  ⚠ Browser auth timed out."));
+  console.log();
+
+  const { key } = await inquirer.prompt([
+    {
+      type: "password",
+      name: "key",
+      message: "Paste API key manually:",
+      mask: "•",
+      prefix: "  ",
+      validate: (v: string) =>
+        v.startsWith("sm_") ? true : 'Key should start with "sm_"',
+    },
+  ]);
+  return key;
 }
 
 program
@@ -1304,7 +1263,7 @@ async function maybeFirstRun() {
 program
   .name("sm")
   .description("SharedMemory CLI — persistent memory for AI agents")
-  .version("2.3.0")
+  .version("2.5.0")
   .addHelpText("before", `
   ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.2")}
   ${DIM("Persistent memory for AI agents")}
