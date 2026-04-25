@@ -1,10 +1,10 @@
 {
   "name": "@sharedmemory/cli",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "description": "CLI for SharedMemory — manage AI agent memory from your terminal",
   "bin": {
-    "smem": "./dist/index.js"
+    "sm": "./dist/index.js"
   },
   "main": "dist/index.js",
   "files": ["dist", "LICENSE", "README.md"],

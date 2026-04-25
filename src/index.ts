@@ -17,7 +17,7 @@ function getBaseUrl(): string {
 function getApiKey(): string {
   const key = process.env.SM_API_KEY || (config.get("apiKey") as string);
   if (!key) {
-    console.error(chalk.red("No API key configured. Run: smem config --api-key <key>  or set SM_API_KEY"));
+    console.error(chalk.red("No API key configured. Run: sm config --api-key <key>  or set SM_API_KEY"));
     process.exit(1);
   }
   return key;
@@ -26,7 +26,7 @@ function getApiKey(): string {
 function getVolumeId(): string {
   const vol = process.env.SM_VOLUME_ID || (config.get("volumeId") as string);
   if (!vol) {
-    console.error(chalk.red("No volume configured. Run: smem config --volume <uuid>  or set SM_VOLUME_ID"));
+    console.error(chalk.red("No volume configured. Run: sm config --volume <uuid>  or set SM_VOLUME_ID"));
     process.exit(1);
   }
   return vol;
@@ -51,9 +51,9 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
 // ─── Config ─────────────────────────────────────────────
 
 program
-  .name("smem")
+  .name("sm")
   .description("SharedMemory CLI — manage AI agent memory from your terminal")
-  .version("2.0.1");
+  .version("2.2.0");
 
 program
   .command("config")
@@ -195,7 +195,7 @@ program
     const spinner = ora("Thinking...").start();
 
     try {
-      const result = await apiFetch("/agent/memory/query", {
+      const result = await apiFetch("/agent/memory/chat", {
         method: "POST",
         body: JSON.stringify({
           query,
@@ -207,24 +207,27 @@ program
       spinner.stop();
       console.log();
 
-      if (result.memories?.length) {
-        console.log(chalk.bold(`${result.memories.length} relevant memories:\n`));
-        for (const [i, m] of result.memories.entries()) {
-          console.log(`  ${chalk.dim(`${i + 1}.`)} ${chalk.dim(`(${(m.score * 100).toFixed(0)}%)`)} ${m.content}`);
-          console.log(`     ${chalk.dim(`by ${m.agent || "unknown"} · ${m.created_at?.split("T")[0] || ""}`)}`);
-        }
-      } else {
-        console.log(chalk.dim("No relevant memories found."));
+      // Show LLM answer first
+      if (result.answer) {
+        console.log(chalk.bold("Answer:\n"));
+        console.log(result.answer);
+        console.log();
       }
 
-      if (result.graph_facts?.length) {
-        console.log(chalk.bold.blue("\nGraph facts:"));
-        for (const f of result.graph_facts) {
-          console.log(`  ${chalk.cyan(f.source)} ${chalk.dim("→")} ${chalk.yellow(f.type)} ${chalk.dim("→")} ${chalk.cyan(f.target)}`);
+      if (result.sources?.length) {
+        console.log(chalk.dim(`─── ${result.sources.length} sources used ───\n`));
+        for (const [i, m] of result.sources.entries()) {
+          const scoreStr = typeof m.score === "number" ? `(${(m.score * 100).toFixed(0)}%)` : "";
+          console.log(`  ${chalk.dim(`${i + 1}.`)} ${chalk.dim(scoreStr)} ${m.content?.slice(0, 120)}${m.content?.length > 120 ? "…" : ""}`);
         }
       }
 
-      console.log(chalk.dim(`\nTotal: ${result.total_results} results`));
+      if (result.citations?.length) {
+        const verified = result.citations.filter((c: any) => c.status === "verified").length;
+        if (verified > 0) {
+          console.log(chalk.dim(`\n${verified} citation(s) verified from memory.`));
+        }
+      }
     } catch (err: any) {
       spinner.fail(err.message);
     }
