@@ -27,7 +27,7 @@ const LABEL = chalk.hex("#A78BFA");
 function banner() {
   console.log();
   console.log(
-    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.1")}`,
+    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.2")}`,
   );
   console.log(DIM("  Persistent memory for AI agents"));
   console.log();
@@ -293,9 +293,9 @@ function browserAuthFlow(): Promise<string> {
         res.end(`<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:white;">
           <div style="text-align:center">
             <h1 style="color:#22c55e">&#10003; CLI Authenticated!</h1>
-            <p style="color:#9ca3af">This tab will close automatically...</p>
+            <p id="msg" style="color:#9ca3af">You can close this tab and return to your terminal.</p>
           </div>
-          <script>setTimeout(()=>window.close(),1500)</script>
+          <script>try{setTimeout(()=>window.close(),1000)}catch(e){}</script>
         </body></html>`);
 
         cleanup();
@@ -1306,7 +1306,7 @@ program
   .description("SharedMemory CLI — persistent memory for AI agents")
   .version("2.3.0")
   .addHelpText("before", `
-  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.1")}
+  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.2")}
   ${DIM("Persistent memory for AI agents")}
 `)
   .addHelpText("after", `

@@ -1,19 +1,31 @@
 {
   "name": "@sharedmemory/cli",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "type": "module",
   "description": "CLI for SharedMemory — manage AI agent memory from your terminal",
   "bin": {
     "sm": "./dist/index.js"
   },
   "main": "dist/index.js",
-  "files": ["dist", "LICENSE", "README.md"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "dev": "tsx src/index.ts"
   },
-  "keywords": ["ai", "memory", "agents", "shared-memory", "cli", "llm", "mcp"],
+  "keywords": [
+    "ai",
+    "memory",
+    "agents",
+    "shared-memory",
+    "cli",
+    "llm",
+    "mcp"
+  ],
   "author": "SharedMemory AI <akash@sharedmemory.ai> (https://sharedmemory.ai)",
   "license": "MIT",
   "repository": {
@@ -31,16 +43,17 @@
     "access": "public"
   },
   "dependencies": {
-    "commander": "^12.0.0",
+    "@sharedmemory/cli": "^2.4.2",
     "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "conf": "^13.0.0",
     "inquirer": "^9.3.8",
-    "ora": "^8.0.0",
-    "conf": "^13.0.0"
+    "ora": "^8.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.0",
-    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0",
     "tsx": "^4.7.0",
-    "@types/node": "^20.11.0"
+    "typescript": "^5.4.0"
   }
 }
