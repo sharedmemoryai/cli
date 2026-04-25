@@ -27,7 +27,7 @@ const LABEL = chalk.hex("#A78BFA");
 function banner() {
   console.log();
   console.log(
-    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.0")}`,
+    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.1")}`,
   );
   console.log(DIM("  Persistent memory for AI agents"));
   console.log();
@@ -1306,7 +1306,7 @@ program
   .description("SharedMemory CLI — persistent memory for AI agents")
   .version("2.3.0")
   .addHelpText("before", `
-  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.0")}
+  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.1")}
   ${DIM("Persistent memory for AI agents")}
 `)
   .addHelpText("after", `

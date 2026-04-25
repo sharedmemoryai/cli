@@ -1,6 +1,6 @@
 {
   "name": "@sharedmemory/cli",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "type": "module",
   "description": "CLI for SharedMemory — manage AI agent memory from your terminal",
   "bin": {
