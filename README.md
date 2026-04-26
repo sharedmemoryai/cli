@@ -1,6 +1,6 @@
 # @sharedmemory/cli
 
-Command-line interface for [SharedMemory](https://sharedmemory.ai) — manage AI agent memory from the terminal.
+Command-line interface for [SharedMemory](https://sharedmemory.ai) — AI that follows your project rules automatically.
 
 ## Installation
 
@@ -13,35 +13,50 @@ Requires Node.js 18+.
 ## Setup
 
 ```bash
+sm login          # authenticate via browser
+sm init           # guided setup wizard
+```
+
+Or manual:
+
+```bash
 sm config --api-key sm_live_...
 sm config --volume your-volume-id
 ```
 
 ## Commands
 
-### `sm add <content>`
+### `sm "question"` (default)
+
+Just type your question — SharedMemory answers using your stored memories.
+
+```bash
+sm "What technologies does John use?"
+```
+
+### `sm remember <content>`
 
 Store a memory.
 
 ```bash
-sm add "John Smith is the CTO of Acme Corp"
+sm remember "John Smith is the CTO of Acme Corp"
 ```
 
 Options: `-v <volume>`, `-t <type>` (factual / episodic / procedural), `-a <agent>`
 
-### `sm search <query>`
+### `sm query <query>`
 
-Search entities in the knowledge graph.
+Query memories (raw vector + knowledge graph search).
 
 ```bash
-sm search "React"
+sm query "React"
 ```
 
 Options: `-v <volume>`, `-n <limit>`
 
 ### `sm ask <question>`
 
-Ask a question — the LLM answers using your stored memories (full RAG pipeline).
+Ask a question explicitly (same as the default command).
 
 ```bash
 sm ask "What technologies does John use?"

@@ -26,9 +26,9 @@ const LABEL = chalk.hex("#A78BFA");
 function banner() {
   console.log();
   console.log(
-    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.2")}`,
+    `  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.6.0")}`,
   );
-  console.log(DIM("  Persistent memory for AI agents"));
+  console.log(DIM("  AI that follows your project rules automatically"));
   console.log();
 }
 
@@ -250,9 +250,9 @@ async function loginFlow() {
   console.log(`  ${SUCCESS("✓")} ${chalk.white.bold("Authenticated!")}`);
   console.log();
   console.log(DIM("  Try these:"));
-  console.log(`    ${ACCENT("sm ask")} ${DIM('"What do you know about me?"')}`);
-  console.log(`    ${ACCENT("sm add")} ${DIM('"I prefer TypeScript over JavaScript"')}`);
-  console.log(`    ${ACCENT("sm search")} ${DIM('"preferences"')}`);
+  console.log(`    ${ACCENT("sm")} ${DIM('"What do you know about me?"')}`);
+  console.log(`    ${ACCENT("sm remember")} ${DIM('"I prefer TypeScript over JavaScript"')}`);
+  console.log(`    ${ACCENT("sm query")} ${DIM('"preferences"')}`);
   console.log();
 }
 
@@ -439,9 +439,9 @@ program
     console.log(`  ${SUCCESS("✓")} ${chalk.white.bold("You're all set!")}`);
     console.log();
     console.log(DIM("  Try these:"));
-    console.log(`    ${ACCENT("sm ask")} ${DIM('"What do you know about me?"')}`);
-    console.log(`    ${ACCENT("sm add")} ${DIM('"I prefer TypeScript over JavaScript"')}`);
-    console.log(`    ${ACCENT("sm search")} ${DIM('"preferences"')}`);
+    console.log(`    ${ACCENT("sm")} ${DIM('"What do you know about me?"')}`);
+    console.log(`    ${ACCENT("sm remember")} ${DIM('"I prefer TypeScript over JavaScript"')}`);
+    console.log(`    ${ACCENT("sm query")} ${DIM('"preferences"')}`);
     console.log();
   });
 
@@ -597,7 +597,7 @@ program
       content = text;
     }
 
-    const spinner = ora({ text: "Adding memory...", indent: 2 }).start();
+    const spinner = ora({ text: "Remembering...", indent: 2 }).start();
 
     try {
       const body: any = {
@@ -634,11 +634,12 @@ program
     }
   });
 
-// ─── Search ─────────────────────────────────────────────
+// ─── Query ─────────────────────────────────────────────
 
 program
-  .command("search [query...]")
-  .description("Search memories (hybrid: vector + knowledge graph)")
+  .command("query [query...]")
+  .alias("search")
+  .description("Query memories (hybrid: vector + knowledge graph)")
   .option("-v, --volume <id>", "Volume ID")
   .option("-n, --limit <n>", "Max results", "10")
   .option("--from <date>", "Filter from date (ISO)")
@@ -1254,6 +1255,21 @@ async function maybeFirstRun() {
       process.exit(0);
     }
   }
+
+  // Default command: `sm "question"` → chat
+  // If first arg doesn't match a known command, treat it as a question
+  if (args.length > 0) {
+    const knownCommands = [
+      "login", "init", "use", "ask", "remember", "add", "query", "search",
+      "config", "volumes", "status", "profile", "instructions", "agents",
+      "help", "--help", "-h", "--version", "-V",
+    ];
+    const firstArg = args[0];
+    if (!knownCommands.includes(firstArg) && !firstArg.startsWith("-")) {
+      // Treat as: sm ask "question..."
+      process.argv.splice(2, 0, "ask");
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1263,20 +1279,21 @@ async function maybeFirstRun() {
 program
   .name("sm")
   .description("SharedMemory CLI — persistent memory for AI agents")
-  .version("2.5.0")
+  .version("2.6.0")
   .addHelpText("before", `
-  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.4.2")}
-  ${DIM("Persistent memory for AI agents")}
+  ${BRAND("▸ SharedMemory")} ${DIM("CLI v2.6.0")}
+  ${DIM("AI that follows your project rules automatically")}
 `)
   .addHelpText("after", `
 ${chalk.white.bold("  Quick Start:")}
-    ${ACCENT("sm login")}                    ${DIM("Authenticate via browser")}
-    ${ACCENT("sm init")}                     ${DIM("Interactive setup wizard")}
-    ${ACCENT("sm ask")} ${DIM('"your question"')}       ${DIM("Ask a question (RAG + LLM)")}
-    ${ACCENT("sm add")} ${DIM('"some fact"')}           ${DIM("Store a memory")}
-    ${ACCENT("sm search")} ${DIM('"query"')}            ${DIM("Search memories")}
+    ${ACCENT("sm")} ${DIM('"your question"')}            ${DIM("Ask anything (default)")}
+    ${ACCENT("sm remember")} ${DIM('"some fact"')}       ${DIM("Store a memory")}
+    ${ACCENT("sm query")} ${DIM('"search terms"')}       ${DIM("Search memories (raw)")}
+    ${ACCENT("sm ask")} ${DIM('"your question"')}        ${DIM("Ask a question (explicit)")}
 
 ${chalk.white.bold("  Management:")}
+    ${ACCENT("sm login")}                    ${DIM("Authenticate via browser")}
+    ${ACCENT("sm init")}                     ${DIM("Interactive setup wizard")}
     ${ACCENT("sm use")}                      ${DIM("Switch volume interactively")}
     ${ACCENT("sm volumes")}                  ${DIM("List all volumes")}
     ${ACCENT("sm profile")}                  ${DIM("View volume profile")}
