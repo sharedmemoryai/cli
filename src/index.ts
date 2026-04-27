@@ -576,6 +576,7 @@ program
 
 program
   .command("add [content...]")
+  .alias("remember")
   .description("Add a memory to the current volume")
   .option("-v, --volume <id>", "Volume ID")
   .option("-t, --type <type>", "Memory type (factual, episodic, procedural)", "factual")
