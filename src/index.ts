@@ -101,6 +101,8 @@ function requireVolumeId(): string {
   return vol;
 }
 
+const CLI_VERSION = "2.6.0";
+
 async function apiFetch(
   path: string,
   opts: RequestInit = {},
@@ -109,6 +111,10 @@ async function apiFetch(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${requireApiKey()}`,
+    "User-Agent": `sharedmemory-cli/${CLI_VERSION} (${process.platform}; node-${process.version})`,
+    "X-SM-Client": "cli",
+    "X-SM-Client-Version": CLI_VERSION,
+    "X-SM-Client-Host": "terminal",
     ...((opts.headers as Record<string, string>) || {}),
   };
 
